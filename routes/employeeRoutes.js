@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../db"); 
+const pool = require("../db");
 
 //create an employee
 router.post("/", async (req, res) => {
@@ -22,10 +22,10 @@ router.post("/", async (req, res) => {
     }
 });
 
-// liist Employees with Pagination
+// list Employees with Pagination
 router.get("/", async (req, res) => {
     const { page, limit } = req.query;
-    const offset = (page - 1) * limit; 
+    const offset = (page - 1) * limit;
     try {
         const connection = await pool.getConnection();
         const [results] = await connection.query(
@@ -46,6 +46,17 @@ router.put("/:id", async (req, res) => {
     const data = req.body;
     try {
         const connection = await pool.getConnection();
+
+        const [existingEmployee] = await connection.query(
+            "SELECT * FROM employees WHERE id = ?",
+            [id]
+        );
+
+        if (!existingEmployee.length) {
+            connection.release();
+            return res.status(404).json({ error: "Employee not found" });
+        }
+
         await connection.query("UPDATE employees SET ? WHERE id = ?", [
             data,
             id,
@@ -63,6 +74,17 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
     try {
         const connection = await pool.getConnection();
+
+        const [existingEmployee] = await connection.query(
+            "SELECT * FROM employees WHERE id = ?",
+            [id]
+        );
+
+        if (!existingEmployee.length) {
+            connection.release();
+            return res.status(404).json({ error: "Employee not found" });
+        }
+
         await connection.query("DELETE FROM employees WHERE id = ?", [id]);
         connection.release();
         res.json({ message: "Employee deleted successfully" });
@@ -77,6 +99,7 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
     try {
         const connection = await pool.getConnection();
+
         const [results] = await connection.query(
             "SELECT * FROM employees WHERE id = ?",
             [id]
